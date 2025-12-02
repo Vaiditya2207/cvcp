@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVCP Video Call</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #111;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            padding: 1rem;
+            background: #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        .badge {
+            background: #00ff88;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        #video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            width: 100%;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0,0,0,0.5);
+            padding: 1rem;
+            border-radius: 2rem;
+        }
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+        .btn-primary { background: #00ff88; color: #000; }
+        .btn-danger { background: #ff4444; color: #fff; }
+        
+        #join-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        input {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #222;
+            color: #fff;
+            margin-bottom: 1rem;
+            width: 300px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>CVCP Video</span>
+            <span class="badge">CUSTOM PROTOCOL</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <div id="connection-target" style="font-family: monospace; font-size: 0.9rem; color: #00ff88;"></div>
+            <div id="status" style="font-size: 0.8rem; color: #888;">Disconnected</div>
+        </div>
+    </header>
+
+    <main>
+        <div id="join-screen">
+            <h1>Join Room</h1>
+            <input type="text" id="room-input" placeholder="Enter Room ID (e.g. room1)" value="room1">
+            <button class="btn-primary" id="join-btn">Join Room</button>
+        </div>
+
+        <div id="video-grid">
+            <video id="local-video" autoplay muted playsinline></video>
+        </div>
+
+        <div class="controls" style="display: none;" id="call-controls">
+            <button class="btn-danger" id="leave-btn">Leave Call</button>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

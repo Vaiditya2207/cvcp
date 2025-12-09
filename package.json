@@ -5,9 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
-    "custom": "node server-hybrid.js",
-    "hybrid": "node server-hybrid.js"
+    "dev": "node server.js"
   },
   "keywords": [
     "video-call",

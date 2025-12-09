@@ -1,13 +1,18 @@
 const net = require('net');
+const http = require('http');
 const { TYPES, SimpleCipher, Packet } = require('./lib/protocol');
 
 const PORT = 9000;
+const HTTP_PORT = 9001;
 const cipher = new SimpleCipher('my-secret-video-key');
 
 const rooms = new Map(); // roomId -> Set(socket)
 const clients = new Map(); // socket -> { id, roomId }
 
 const server = net.createServer((socket) => {
+    // Disable Nagle's algorithm for real-time performance
+    socket.setNoDelay(true);
+
     const clientId = Math.random().toString(36).substr(2, 9);
     clients.set(socket, { id: clientId, roomId: null });
     
@@ -53,6 +58,11 @@ function handlePacket(socket, packet) {
             
         case TYPES.KEEPALIVE:
             // Just echo back or ignore
+            break;
+
+        case TYPES.BENCHMARK:
+            // Echo back immediately for RTT measurement
+            send(socket, TYPES.BENCHMARK, packet.payload);
             break;
     }
 }
@@ -149,4 +159,31 @@ server.listen(PORT, '0.0.0.0', () => {
 ║      Protocol: Raw TCP + Custom Enc    ║
 ╚════════════════════════════════════════╝
     `);
+});
+
+// --- HTTP Benchmark Server ---
+const httpServer = http.createServer((req, res) => {
+    // Enable CORS for the benchmark page
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    if (req.url === '/ping') {
+        // Simulate standard JSON API response
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'pong', ts: Date.now() }));
+    } else {
+        res.writeHead(404);
+        res.end();
+    }
+});
+
+httpServer.listen(HTTP_PORT, '0.0.0.0', () => {
+    console.log(`[HTTP] Benchmark Server running on port ${HTTP_PORT}`);
 });

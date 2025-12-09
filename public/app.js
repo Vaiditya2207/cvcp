@@ -3,7 +3,8 @@ const TYPES = {
     HANDSHAKE: 0x01,
     SIGNALING: 0x02,
     ROOM_CONTROL: 0x03,
-    KEEPALIVE: 0x04
+    KEEPALIVE: 0x04,
+    BENCHMARK: 0x05
 };
 
 class App {

@@ -1,0 +1,136 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\begin{document}
+
+\title{
+\textbf{Custom Video Call Protocol (CVCP): A Hybrid Architecture for Low-Latency Real-Time Communication}
+}
+
+\author{\IEEEauthorblockN{Vaiditya Tanwar, Yashi Gupta, Pranay Vishwakarma}
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
+\textit{Rishihood University}}
+}
+
+\maketitle
+
+\begin{abstract}
+In the domain of real-time web communication, latency is the critical bottleneck. Traditional web-based video calling applications rely on standard protocols like HTTP and WebSocket for signaling, which introduce overhead through text-based headers, complex handshakes, and frame masking. This paper presents the Custom Video Call Protocol (CVCP), a novel hybrid architecture that bypasses these browser limitations. By utilizing a local client proxy to bridge the web interface with raw TCP sockets, CVCP achieves the performance of native applications while retaining the accessibility of a web browser. We evaluate our system against a standard HTTP baseline, demonstrating a 49.5\% reduction in signaling latency and significantly lower jitter.
+\end{abstract}
+
+\begin{IEEEkeywords}
+real-time communication, raw TCP, WebRTC, protocol design, latency optimization, client proxy
+\end{IEEEkeywords}
+
+\section{\textbf{Introduction}}
+The proliferation of remote work has made video conferencing tools essential. While native applications (like Zoom or Microsoft Teams) offer high performance by utilizing low-level networking primitives, web-based alternatives (like Google Meet) are constrained by the browser's sandbox. Browsers restrict direct access to raw TCP/UDP sockets, forcing developers to rely on HTTP for RESTful interactions or WebSockets for full-duplex communication.
+
+While effective, these web protocols are designed for general-purpose compatibility rather than raw speed. HTTP requests carry heavy metadata (headers, cookies), and WebSockets involve masking and framing overheads. For high-frequency signaling in real-time applications, these overheads accumulate, leading to perceptible latency.
+
+This paper introduces \textbf{CVCP (Custom Video Call Protocol)}, a system that "cheats" the browser sandbox. By installing a lightweight local proxy that handles raw TCP connections and bridges them to the browser via a local WebSocket, we achieve the best of both worlds: the raw networking speed of a native app and the UI flexibility of a web app.
+
+\section{\textbf{Problem Definition}}
+The core problem addressed is the \textbf{Protocol Overhead} in web browsers.
+\begin{itemize}
+    \item \textbf{HTTP Overhead:} A simple "keep-alive" signal in HTTP might require 200+ bytes of headers for a few bytes of payload.
+    \item \textbf{Connection Latency:} Establishing new HTTP connections involves TCP handshakes and potentially TLS negotiation, adding round-trip times (RTT).
+    \item \textbf{Nagle's Algorithm:} Standard TCP stacks often enable Nagle's algorithm to buffer small packets, which is detrimental to real-time interactivity.
+\end{itemize}
+
+Our objective is to design a signaling channel that minimizes packet size and transmission delay, achieving $RTT_{CVCP} < RTT_{HTTP}$.
+
+\section{\textbf{Methodology}}
+To validate our architecture, we implemented a fully functional video calling application.
+\begin{itemize}
+    \item \textbf{Signaling:} Handled by CVCP (Raw TCP).
+    \item \textbf{Media:} Handled by WebRTC (Peer-to-Peer UDP). CVCP is used only to exchange the WebRTC SDP offers and ICE candidates.
+    \item \textbf{Security:} We implemented a custom \texttt{SimpleCipher} using XOR-Rotation with a SHA-256 derived key for the signaling channel, prioritizing speed over the heavy computation of full TLS.
+\end{itemize}
+
+\section{\textbf{System Design}}
+The CVCP architecture consists of three main components: the Browser UI, the Client Proxy, and the Signaling Server.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/architecture_diagram.jpeg}
+    \caption{\textbf{CVCP System Architecture:} The Client Proxy acts as a bridge, converting local WebSocket messages from the browser into raw TCP packets for the internet.}
+    \label{fig:arch}
+\end{figure}
+
+\subsection{The Client Proxy}
+To bypass browser restrictions, we utilize a "sidecar" approach. A Node.js application runs locally on the user's machine. It listens on a local port for WebSocket connections from the browser. Simultaneously, it maintains a persistent, raw TCP connection to the remote CVCP server.
+
+\subsection{OS Integration}
+We registered a custom URI scheme, \texttt{cvcp://}. When a user clicks a link, the operating system (macOS in our implementation) triggers a protocol handler that launches the Client Proxy automatically, creating a seamless user experience similar to launching Zoom.
+
+\subsection{The Custom Protocol}
+Instead of JSON or XML, CVCP uses a binary packet format:
+\begin{equation}
+\text{Packet} = [\text{Length (4B)}] + [\text{Type (1B)}] + [\text{Payload}]
+\end{equation}
+This structure eliminates the need for delimiters and allows for efficient stream parsing. We also disabled Nagle's algorithm (\texttt{TCP\_NODELAY}) on both client and server to ensure immediate packet transmission.
+
+\section{\textbf{Experiments and Results}}
+We conducted a benchmark comparing the Round Trip Time (RTT) of CVCP against a standard HTTP implementation running on the same server.
+
+\subsection{Experimental Setup}
+\begin{itemize}
+    \item \textbf{Environment:} macOS, Node.js v18.
+    \item \textbf{Network:} Localhost loopback (to isolate protocol overhead from network jitter).
+    \item \textbf{Sample Size:} 100 sequential ping-pong messages for each protocol.
+\end{itemize}
+
+\subsection{Performance Analysis}
+The results of the benchmark are summarized in Table \ref{tab:results}.
+
+\begin{table}[H]
+\centering
+\caption{Latency Comparison (Lower is Better)}
+\label{tab:results}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{CVCP (Raw TCP)} & \textbf{HTTP (Standard)} \\ \midrule
+Mean Latency & 0.58 ms & 1.15 ms \\
+Minimum Latency & 0.42 ms & 0.98 ms \\
+Jitter ($\sigma$) & Low & High \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/latency_comparison.png}
+    \caption{\textbf{Latency Comparison:} CVCP (Green) maintains a consistently lower latency profile compared to HTTP (Orange).}
+    \label{fig:latency}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/latency_distribution.png}
+    \caption{\textbf{Latency Distribution:} The box plot illustrates the tighter spread and lower median latency of the CVCP protocol.}
+    \label{fig:dist}
+\end{figure}
+
+\textbf{Analysis:}
+\begin{enumerate}
+    \item \textbf{Speedup:} CVCP achieved a mean latency of 0.58ms compared to HTTP's 1.15ms. This represents a \textbf{49.5\% reduction} in overhead.
+    \item \textbf{Stability:} As shown in Fig. \ref{fig:latency}, the HTTP latency spikes frequently. This is attributed to the overhead of parsing text headers and managing connection states. CVCP, being a persistent stream, remains flat and predictable.
+\end{enumerate}
+
+\section{\textbf{Conclusion}}
+This study demonstrates that for high-performance real-time applications, the overhead of standard web protocols is non-negligible. By adopting a hybrid architecture with a local client proxy and a custom binary protocol, we successfully reduced signaling latency by approximately 50\%. While WebRTC remains the standard for media streaming, offloading the signaling path to raw TCP provides a snappier, more responsive user experience. Future work will focus on implementing Diffie-Hellman key exchange to enhance security without compromising the latency benefits.
+
+\begin{thebibliography}{00}
+\bibitem{b1} H. Alvestrand, "Overview: Real Time Protocols for Browser-based Applications," IETF, 2011.
+\bibitem{b2} I. Grigorik, "High Performance Browser Networking," O'Reilly Media, 2013.
+\bibitem{b3} J. Nagle, "Congestion Control in IP/TCP Internetworks," RFC 896, 1984.
+\end{thebibliography}
+
+\end{document}

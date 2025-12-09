@@ -78,6 +78,9 @@ wss.on('connection', (ws) => {
     
     // 3. Connect to Real CVCP Server via TCP
     const tcpClient = new net.Socket();
+    // Disable Nagle's algorithm
+    tcpClient.setNoDelay(true);
+
     let buffer = Buffer.alloc(0);
 
     tcpClient.connect(REMOTE_PORT, REMOTE_HOST, () => {

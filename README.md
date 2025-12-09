@@ -1,65 +1,50 @@
-# Local Video Call Application
+# Local Video Call (CVCP)
 
-A simple, lightweight video calling application for two people on the same local network (WiFi). Works without internet connection!
+A high-performance video calling application that uses a **Custom Video Call Protocol (`cvcp://`)** over raw TCP, bypassing standard HTTP/HTTPS overhead.
 
-## Features
+## Architecture
+- **Protocol**: Custom Binary Protocol over TCP (Port 9000)
+- **Encryption**: Custom XOR-Rotation Cipher
+- **Client**: Hybrid Native-Web (Node.js Proxy + WebRTC UI)
 
-- Real-time video and audio calling
-- Works on local network without internet
-- Simple web interface
-- Toggle video/audio on and off
-- Room-based connections
-- Lightweight and fast
+## Prerequisites
+- Node.js installed
+- macOS (for the protocol handler app)
 
-## Quick Start
+## Setup & Installation
 
-1. **Install dependencies:**
- ```bash
- npm install
- ```
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-2. **Start the server:**
- ```bash
- npm start
- ```
+2. **Register the Protocol Handler** (One-time setup)
+   ```bash
+   node register.js
+   ```
+   *   This creates `CVCPHandler.app`.
+   *   **Important**: Open Finder (`open .`) and double-click `CVCPHandler.app` once to register it with macOS.
 
-3. **Access the application:**
- - Open your browser to the address shown in the terminal
- - Share the network URL with the other person
- - Both users should use the same Room ID
- - Click "Join Room" then "Start Call"
+## How to Run
 
-## How to Use
+### 1. Start the Server
+Open a terminal and run:
+```bash
+node server.js
+```
+*   The server listens on TCP Port 9000.
 
-1. **Make sure both devices are on the same WiFi network**
-2. **Start the server** on one device (can be either device)
-3. **Both users open the application** in their web browsers using the network URL
-4. **Enter the same Room ID** (e.g., "room1")
-5. **Click "Join Room"** - this will ask for camera/microphone permission
-6. **Click "Start Call"** - the other person will get a call notification
-7. **Accept the call** and enjoy your video chat!
+### 2. Launch the Client
+Open a **new terminal** (or click a link) and run:
+```bash
+open cvcp://localhost:9000
+```
+*   This will automatically:
+    1.  Launch the `CVCPHandler.app` (which runs `client.js`).
+    2.  Connect to the TCP server.
+    3.  Open your default browser with the UI.
 
-## Browser Requirements
-
-- Modern web browser with WebRTC support (Chrome, Firefox, Safari, Edge)
-- Camera and microphone access permission
-
-## Network Requirements
-
-- Both devices must be on the same WiFi network
-- No internet connection required (works completely offline)
-
-## Troubleshooting
-
-- **Can't connect?** Make sure both devices are on the same WiFi
-- **No video/audio?** Check browser permissions for camera/microphone
-- **Connection fails?** Try refreshing the page and rejoining the room
-
-## Technical Details
-
-- Uses WebRTC for peer-to-peer video calling
-- Node.js WebSocket server for signaling
-- No external dependencies for calling (works offline)
-- STUN servers used only for NAT traversal (not required for local network)
-
-Enjoy your private, local video calls! 
+## Usage
+1.  Enter a **Room ID** (e.g., `room1`).
+2.  Click **Join Room**.
+3.  Wait for a peer to join the same room. 
